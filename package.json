@@ -32,30 +32,12 @@
     "type": "git",
     "url": "https://github.com/Azure/azure-sdk-for-node/tree/master/lib/services/documentdb"
   },
-  "licenses": [
-    {
-      "type": "Apache License, Version 2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ],
-  "_id": "documentdb@0.9.0",
-  "dist": {
-    "shasum": "2cdc0b69c029a9c741c03aa7274d0236dc869473",
-    "tarball": "http://registry.npmjs.org/documentdb/-/documentdb-0.9.0.tgz"
-  },
-  "_from": "documentdb@",
-  "_npmVersion": "1.3.21",
-  "_npmUser": {
+  "maintainers": [{
     "name": "windowsazure",
     "email": "azuresdk@outlook.com"
-  },
-  "maintainers": [
-    {
-      "name": "windowsazure",
-      "email": "azuresdk@outlook.com"
-    }
-  ],
-  "directories": {},
-  "_shasum": "2cdc0b69c029a9c741c03aa7274d0236dc869473",
-  "_resolved": "https://registry.npmjs.org/documentdb/-/documentdb-0.9.0.tgz"
+  }],
+  "licenses": [{
+    "type": "Apache License, Version 2.0",
+    "url": "http://www.apache.org/licenses/LICENSE-2.0"
+  }]
 }
