@@ -18,7 +18,10 @@
     "node": ">=0.8"
   },
   "dependencies": {
-    "q": "*"
+    "bluebird": "^2.3.0"
+  },
+  "scripts": {
+    "test": "mocha -t 10000 -R spec"
   },
   "devDependencies": {
     "mocha": "*",
@@ -54,6 +57,5 @@
   ],
   "directories": {},
   "_shasum": "2cdc0b69c029a9c741c03aa7274d0236dc869473",
-  "_resolved": "https://registry.npmjs.org/documentdb/-/documentdb-0.9.0.tgz",
-  "readme": "ERROR: No README data found!"
+  "_resolved": "https://registry.npmjs.org/documentdb/-/documentdb-0.9.0.tgz"
 }

@@ -1,10 +1,10 @@
-var DocumentDBClient = require("documentdb").DocumentClientWrapper
-  , DocumentBase = require("documentdb").DocumentBase
+var DocumentDBClient = require("../documentclientwrapper").DocumentClientWrapper
+  , DocumentBase = require("../documentclientwrapper").DocumentBase
   , assert = require("assert")
   , Stream = require("stream")
   , testConfig = require('./_testConfig')
-  , Q = require('q');
-  
+  , Promise = require('bluebird');
+
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 var host = testConfig.host;
@@ -22,7 +22,7 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                 if(length === 0){
                     return done();
                 }
-            
+
                 var count = 0;
                 databases.forEach(function(database){
                     client.deleteDatabaseAsync(database._self)
@@ -36,17 +36,17 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             console.log(err);
                         });
                 });
-            }, 
+            },
             function(err){
                 console.log(err);
-                done();    
+                done();
             });
     });
-    
+
     describe("Validate Database CRUD", function() {
         it("[promiseApi] Should do database CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
-            var validateOptions = { 
+            var validateOptions = {
                 className: "Database" ,
                 resourceDefinition: {id: "sampleDb"},
                 validateCreate: function(created) {
@@ -61,24 +61,24 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                     return resource;
                 }
             };
-            
+
             validateCRUDAsync(client, undefined, validateOptions)
                 .then(function() {
                     done();
                 })
-                .fail(function(error) {
+                .catch(function(error) {
                     done();
                 });
-           
+
         });
     });
-    
+
     describe("Validate Collection CRUD", function(){
         it("[promiseApi] Should do collection CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true})
                 .then(function(createdResources) {
-                    var validateOptions = { 
+                    var validateOptions = {
                         className: "Collection" ,
                         resourceDefinition: {id: "sample coll"},
                         validateCreate: function(created) {
@@ -91,25 +91,25 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             return resource;
                         }
                     };
-                    
+
                     validateCRUDAsync(client, createdResources.createdDb._self, validateOptions)
                         .then(function() {
                             done();
                         })
-                        .fail(function(error) {
+                        .catch(function(error) {
                             console.log(error);
                             done();
                         });
                 });
         });
     });
-    
+
     describe("Validate Document CRUD", function(){
         it("[promiseApi] Should do document CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true, coll: true})
                 .then(function(createdResources) {
-                    var validateOptions = { 
+                    var validateOptions = {
                         className: "Document" ,
                         resourceDefinition: { id: "sample document", foo: "bar", key: "value" },
                         validateCreate: function(created) {
@@ -127,19 +127,19 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             return resource;
                         }
                     };
-                    
+
                     validateCRUDAsync(client, createdResources.createdCollection._self, validateOptions)
                         .then(function() {
                             done();
                         })
-                        .fail(function(error) {
+                        .catch(function(error) {
                             console.log(error);
                             done();
                         });
                 });
         });
     });
-    
+
     describe("Validate Attachment CRUD", function(){
         var createReadableStream = function(firstChunk, secondChunk){
             var readableStream = new Stream.Readable();
@@ -154,13 +154,13 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                 }
                 chunkCount++;
             };
-            
+
             return readableStream;
         };
-        
+
         var readMediaResponse = function(response, callback){
             var data = "";
-            response.on("data", function(chunk) { 
+            response.on("data", function(chunk) {
                 data += chunk;
             });
             response.on("end", function() {
@@ -171,13 +171,13 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                 return callback(undefined, data);
             });
         };
-        
+
         it("[promiseApi] Should do attachment CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true, coll: true, doc: true})
                 .then(function(createdResources) {
                     var attachmentDefinition = { id: "dynamic attachment", media: "http://xstore.", MediaType: "Book", Author:"My Book Author", Title:"My Book Title", contentType:"application/text" };
-                    var validateOptions = { 
+                    var validateOptions = {
                         className: "Attachment" ,
                         resourceDefinition: attachmentDefinition,
                         validateCreate: function(created) {
@@ -193,18 +193,18 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             return resource;
                         }
                     };
-                    
+
                     validateCRUDAsync(client, createdResources.createdDoc._self, validateOptions)
                         .then(function() {
                             done();
                         })
-                        .fail(function(error) {
+                        .catch(function(error) {
                             console.log(error, error.stack);
                             done();
                         });
-                });           
+                });
         });
-        
+
         it("[promiseApi] Should do attachment media operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             var validMediaOptions = { slug: "attachment name", contentType: "application/text" };
@@ -223,7 +223,7 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                                 function(error) {
                                     var badRequestErrorCode = 400;
                                     assert.equal(error.code, badRequestErrorCode);
-                                    
+
                                     contentStream = createReadableStream();
                                     return client.createAttachmentAndUploadMediaAsync(document._self, contentStream, validMediaOptions);
                                 })
@@ -252,21 +252,21 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                                         done();
                                     });
                                 })
-                                .fail(function(error) {
+                                .catch(function(error) {
                                     console.log(error);
                                     done();
                                 });
                 })
-            
+
         });
     });
-    
+
     describe("Validate User CRUD", function(){
         it("[promiseApi] Should do User CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true})
                 .then(function(createdResources) {
-                    var validateOptions = { 
+                    var validateOptions = {
                         className: "User" ,
                         resourceDefinition: { id: "new user"},
                         validateCreate: function(created) {
@@ -281,25 +281,25 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             return resource;
                         }
                     };
-                    
+
                     validateCRUDAsync(client, createdResources.createdDb._self, validateOptions)
                         .then(function() {
                             done();
                         })
-                        .fail(function(error) {
+                        .catch(function(error) {
                             console.log(error);
                             done();
                         });
                 });
         });
     });
-    
+
      describe("Validate Permission CRUD", function(){
         it("[promiseApi] Should do Permission CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true, user: true, coll: true})
                 .then(function(createdResources) {
-                    var validateOptions = { 
+                    var validateOptions = {
                         className: "Permission" ,
                         resourceDefinition: { id: "new permission", permissionMode: DocumentBase.PermissionMode.Read, resource: createdResources.createdCollection._self },
                         validateCreate: function(created) {
@@ -318,32 +318,32 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             return resource;
                         }
                     };
-                    
+
                     validateCRUDAsync(client, createdResources.createdUser._self, validateOptions)
                         .then(function() {
                             done();
                         })
-                        .fail(function(error) {
+                        .catch(function(error) {
                             console.log(error);
                             done();
                         });
                 });
         });
     });
-    
+
     describe("Validate Trigger CRUD", function(){
         it("[promiseApi] Should do trigger CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true, coll: true})
                 .then(function(createdResources) {
-                    var triggerDefinition = { 
-                        id: "sample trigger", 
+                    var triggerDefinition = {
+                        id: "sample trigger",
                         serverScript: function() {var x = 10;},
                         triggerType: DocumentBase.TriggerType.Pre,
-                        triggerOperation: DocumentBase.TriggerOperation.All 
+                        triggerOperation: DocumentBase.TriggerOperation.All
                     };
-                    
-                    var validateOptions = { 
+
+                    var validateOptions = {
                         className: "Trigger" ,
                         resourceDefinition: triggerDefinition,
                         validateCreate: function(created) {
@@ -369,27 +369,27 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             return resource;
                         }
                     };
-                    
+
                     validateCRUDAsync(client, createdResources.createdCollection._self, validateOptions)
                         .then(function() {
                             done();
                         })
-                        .fail(function(error) {
+                        .catch(function(error) {
                             console.log(error);
                             done();
                         });
                 });
         });
     });
-    
+
     describe("Validate UDF CRUD", function(){
         it("[promiseApi] Should do UDF CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true, coll: true})
                 .then(function(createdResources) {
                     var udfDefinition = { id: "sample udf", serverScript: function() {var x = 10;} };
-                    
-                    var validateOptions = { 
+
+                    var validateOptions = {
                         className: "UserDefinedFunction" ,
                         resourceDefinition: udfDefinition,
                         validateCreate: function(created) {
@@ -415,27 +415,27 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             return resource;
                         }
                     };
-                    
+
                     validateCRUDAsync(client, createdResources.createdCollection._self, validateOptions)
                         .then(function() {
                             done();
                         })
-                        .fail(function(error) {
+                        .catch(function(error) {
                             console.log(error);
                             done();
                         });
                 });
         });
     });
-    
+
     describe("Validate sproc CRUD", function(){
         it("[promiseApi] Should do sproc CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true, coll: true})
                 .then(function(createdResources) {
                     var sprocDefinition = { id: "sample sproc", serverScript: function() {var x = 10;}};;
-                    
-                    var validateOptions = { 
+
+                    var validateOptions = {
                         className: "StoredProcedure" ,
                         resourceDefinition: sprocDefinition,
                         validateCreate: function(created) {
@@ -461,24 +461,23 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             return resource;
                         }
                     };
-                    
+
                     validateCRUDAsync(client, createdResources.createdCollection._self, validateOptions)
                         .then(function() {
                             done();
                         })
-                        .fail(function(error) {
+                        .catch(function(error) {
                             console.log(error);
                             done();
                         });
                 });
         });
     });
-    
+
     describe("Validate QueryIterator Functionality", function() {
         var createTestResources = function(client) {
-            var deferred = Q.defer();
             var collection, doc1, doc2, doc3;
-            client.createDatabaseAsync({ id: "sample database" })
+            return client.createDatabaseAsync({ id: "sample database" })
                 .then(function(response) {
                     db = response.resource;
                     return client.createCollectionAsync(db._self, {id: "sample collection"});
@@ -503,15 +502,10 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                         doc2: doc2,
                         doc3: doc3
                     };
-                    deferred.resolve(resources);
-                })
-                .fail(function(error){
-                    deferred.reject(error);
+                    return resources;
                 });
-                
-            return deferred.promise;
         };
-        
+
         it("[promiseApi] validate QueryIterator iterator toArray", function(done) {
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createTestResources(client)
@@ -526,18 +520,18 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             assert.equal(docs[2].id, resources.doc3.id);
                             done();
                         })
-                        .fail(function(error){
+                        .catch(function(error){
                             console.log("An error has occured", error, error.stack);
                             done();
                         });
                 })
-                .fail(function(error){
+                .catch(function(error){
                     console.log("An error has occured", error, error.stack);
                     done();
                 });
         });
-       
-        
+
+
         it("[promiseApi] validate queryIterator iterator forEach", function(done) {
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createTestResources(client)
@@ -550,7 +544,7 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             console.log("an error occured", err, err.stack);
                             return done();
                         }
-                        
+
                         counter++;
                         if (counter === 1) {
                             assert.equal(doc.id, resources.doc1.id, "first document should be doc1");
@@ -559,19 +553,19 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                         } else if(counter === 3) {
                             assert.equal(doc.id, resources.doc3.id, "third document should be doc3");
                         }
-                        
+
                         if (doc === undefined) {
                             assert(counter < 5, "iterator should have stopped");
                             return done();
                         }
                     });
                 })
-                .fail(function(error){
+                .catch(function(error){
                     console.log("An error has occured", error, error.stack);
                     done();
                 });
         });
-        
+
         it("[promiseApi] validate queryIterator nextItem and hasMoreResults", function(done) {
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createTestResources(client)
@@ -601,17 +595,17 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             assert.equal(doc, undefined, "queryIterator should return undefined if there is no elements");
                             done();
                         })
-                        .fail(function(error){
+                        .catch(function(error){
                             console.log("An error has occured", error, error.stack);
                             done();
                         });
                 })
-                .fail(function(error){
+                .catch(function(error){
                     console.log("An error has occured", error, error.stack);
                     done();
                 });
         });
-        
+
         it("[promiseApi] validate queryIterator iterator executeNext", function(done) {
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createTestResources(client)
@@ -631,18 +625,18 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                             assert.equal(docs[0].id, resources.doc3.id, "second batch element should be doc3");
                             done();
                         })
-                        .fail(function(error){
+                        .catch(function(error){
                             console.log("An error has occured", error, error.stack);
                             done();
                         });
                 })
-                .fail(function(error){
+                .catch(function(error){
                     console.log("An error has occured", error, error.stack);
                     done();
                 });
         });
     });
-    
+
     describe("validate trigger functionality", function(){
         var triggers = [
             {
@@ -663,7 +657,7 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
             },
             {
                 id: "t3",
-                body: function() { 
+                body: function() {
                     var item = getContext().getRequest().getBody();
                     item.id = item.id.toLowerCase() + 't3';
                     getContext().getRequest().setBody(item);
@@ -684,33 +678,33 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
             },
             {
                 id: "triggerOpType",
-                body: "function() { }", 
+                body: "function() { }",
                 triggerType: DocumentBase.TriggerType.Post,
                 triggerOperation: DocumentBase.TriggerOperation.Delete,
             },
         ];
-        
-        
-        var createTriggersImplementation = function(client, collection, index, deferred){
+
+
+        var createTriggersImplementation = function(client, collection, index, resolve){
             if (index === triggers.length) {
-				return deferred.resolve();
+                return resolve();
             }
-            
-			client.createTriggerAsync(collection._self, triggers[index])
+
+            client.createTriggerAsync(collection._self, triggers[index])
                 .then(function(trigger) {
-                    createTriggersImplementation(client, collection, index + 1, deferred);
+                    createTriggersImplementation(client, collection, index + 1, resolve);
                 })
-                .fail(function(error){
+                .catch(function(error){
                     console.log(error, error.stack);
                 });
         };
-        
+
         var createTriggersAsync = function(client, collection, index) {
-            var deferred = Q.defer();
-            createTriggersImplementation(client, collection, index, deferred);
-            return deferred.promise;
+            return new Promise(function(resolve, reject) {
+                 createTriggersImplementation(client, collection, index, resolve);
+            });
         };
-        
+
         it("[promiseApi] Should do trigger operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true, coll: true})
@@ -743,41 +737,41 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                         .then(function(response) {
                             assert.fail("", "", "request shouldn't succeed");
                         },
-						function(error){
-							done();
-						})
-                        .fail(function(error) {
-                            console.log("error", error, error.stack);  
+                        function(error){
+                            done();
+                        })
+                        .catch(function(error) {
+                            console.log("error", error, error.stack);
                             assert.fail("", "", "an error occured");
                             done();
                         });
                 })
-                .fail(function(error) {
-                    console.log("error", error, error.stack);  
+                .catch(function(error) {
+                    console.log("error", error, error.stack);
                     assert.fail("", "", "an error occured");
                     done();
                 });
         });
     });
-    
+
     describe("validate stored procedure functionality", function () {
         it("[promiseApi] Should do stored procedure operations successfully", function (done) {
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createParentResourcesAsync(client, {db: true, coll: true})
                 .then(function(resources) {
                     var collection = resources.createdCollection;
-					var sproc1 = {
-						id: "storedProcedure1",
-						body: function () {
-							for (var i = 0; i < 1000; i++) {
-								var item = getContext().getResponse().getBody();
-								if (i > 0 && item != i - 1) throw 'body mismatch';
-								getContext().getResponse().setBody(i);
-							}
-						}
-					};
+                    var sproc1 = {
+                        id: "storedProcedure1",
+                        body: function () {
+                            for (var i = 0; i < 1000; i++) {
+                                var item = getContext().getResponse().getBody();
+                                if (i > 0 && item != i - 1) throw 'body mismatch';
+                                getContext().getResponse().setBody(i);
+                            }
+                        }
+                    };
 
-					client.createStoredProcedureAsync(collection._self, sproc1)
+                    client.createStoredProcedureAsync(collection._self, sproc1)
                         .then(function (response) {
                             return client.executeStoredProcedureAsync(response.resource._self);
                         })
@@ -789,7 +783,7 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                                     for (var i = 0; i < 10; i++) getContext().getResponse().appendValue('Body', i);
                                 }
                             };
-                            
+
                             return client.createStoredProcedureAsync(collection._self, sproc2);
                         })
                         .then(function(response) {
@@ -803,7 +797,7 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                                     getContext().getResponse().setBody('a' + input.temp);
                                 }
                             };
-                                            
+
                             return client.createStoredProcedureAsync(collection._self, sproc3);
                         })
                         .then(function(response) {
@@ -811,28 +805,27 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                         })
                         .then(function(response) {
                             assert.equal(response.result, "aso");
-                            done();   
-                        })                                
-                        .fail(function(error) {
-                            console.log("error", error, error.stack);  
+                            done();
+                        })
+                        .catch(function(error) {
+                            console.log("error", error, error.stack);
                             assert.fail("", "", "an error occured");
                             done();
                         });
                     })
-                    .fail(function(error) {
-                        console.log("error", error, error.stack);  
+                    .catch(function(error) {
+                        console.log("error", error, error.stack);
                         assert.fail("", "", "an error occured");
                         done();
                     });
         });
     });
-   
+
     function validateCRUDAsync(client, parentLink, options) {
-        var deferred = Q.defer();
-        var className = options.className, resourceDefinition = options.resourceDefinition, validateCreate = options.validateCreate, 
+        var className = options.className, resourceDefinition = options.resourceDefinition, validateCreate = options.validateCreate,
             validateReplace = options.validateReplace, replaceProperties = options.replaceProperties;
         var resources, replacedResources, readResource, createdResource, beforeCount;
-        client["read" + className + "s"](parentLink).toArrayAsync()
+        return client["read" + className + "s"](parentLink).toArrayAsync()
             .then(function(response) {
                 resources = response.feed;
                 assert.equal(resources.constructor, Array, "Value should be an array");
@@ -857,27 +850,27 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                     return client["query" + className + "s"]('(^/"id"/"' + resourceDefinition.id + '")/"_rid"!?', {jpath: true}).toArrayAsync();
                 }
             })
-			.then(function(response) {
+            .then(function(response) {
                 var resources = response.feed;
                 assert(resources.length > 0, "number of resources for the query should be > 0");
-                var query 
+                var query
                 if (className === "StoredProcedure") {
                     // SQL doesn't work with stored procedures.
                    return client["query" + className + "s"](parentLink, '(^/"id"/"' + resourceDefinition.id + '")/"_rid"!?', {jpath: true}).toArrayAsync();
-                } else if (parentLink) { 
-					return client["query" + className + "s"](parentLink, 'select * FROM root r WHERE r.id="' + resourceDefinition.id + '"').toArrayAsync();
-				} else {
-					return client["query" + className + "s"]('select * FROM root r WHERE r.id="' + resourceDefinition.id + '"').toArrayAsync();
-				}
+                } else if (parentLink) {
+                    return client["query" + className + "s"](parentLink, 'select * FROM root r WHERE r.id="' + resourceDefinition.id + '"').toArrayAsync();
+                } else {
+                    return client["query" + className + "s"]('select * FROM root r WHERE r.id="' + resourceDefinition.id + '"').toArrayAsync();
+                }
             })
             .then(function(response) {
                 var resources = response.feed;
                 assert(resources.length > 0, "number of resources for the query should be > 0");
                 createdResource = replaceProperties(createdResource);
                 if (className !== "Collection") {
-                    return client["replace" + className + "Async"](createdResource._self, createdResource); 
+                    return client["replace" + className + "Async"](createdResource._self, createdResource);
                 } else {
-                    return client["read" + className + "Async"](createdResource._self); 
+                    return client["read" + className + "Async"](createdResource._self);
                 }
             })
             .then(function(response) {
@@ -891,29 +884,28 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                 return client["delete" + className + "Async"](readResource._self);
             })
             .then(function(response) {
-                client["read" + className + "Async"](replacedResource._self)
+                return client["read" + className + "Async"](replacedResource._self)
                     .then(function(response) {
                         assert.fail("", "", "request should return an error");
-                    },
-                    function(error){    
+                    })
+                    .catch(
+                    function(error){
                         var notFoundErrorCode = 404;
                         assert.equal(error.code, notFoundErrorCode, "response should return error code 404");
-                        deferred.resolve();
-                    })
+                        return Promise.resolve();
+                    });
             })
-            .fail(function(error){
-                console.log("error", error, error.stack);  
+            .catch(function(error){
+                console.log("error", error, error.stack);
                 assert.fail("", "", "an error occured");
-                deferred.reject(error);
+                return Promise.reject(error);
             });
-        
-        return deferred.promise;
     }
-    
+
     function createParentResourcesAsync(client, options) {
-        var deferred = Q.defer();
-        var createdResources = {};
-        if (options.db) {
+        return new Promise(function(resolve, reject) {
+            var createdResources = {};
+            if (options.db) {
             client.createDatabaseAsync({ id: "sample database" })
                 .then(function(response){
                     var db = createdResources.createdDb = response.resource;
@@ -925,33 +917,34 @@ describe("NodeJS Client Q prmise Wrapper CRUD Tests", function(){
                                     client.createDocumentAsync(coll._self, {id: "sample doc"})
                                         .then(function(response){
                                             var doc = createdResources.createdDoc = response.resource;
-                                            deferred.resolve(createdResources);
+                                            return resolve(createdResources);
                                         })
                                 } else if (options.user) {
-									client.createUserAsync(db._self, {id: "sample user"})
-										.then(function(response){
-											var user = createdResources.createdUser = response.resource;
-											deferred.resolve(createdResources);
-										});
+                                    client.createUserAsync(db._self, {id: "sample user"})
+                                        .then(function(response){
+                                            var user = createdResources.createdUser = response.resource;
+                                            return resolve(createdResources);
+                                        });
                                 } else {
-                                    deferred.resolve(createdResources);
+                                    return resolve(createdResources);
                                 }
                             });
                     } else if (options.user) {
                         client.createUserAsync(db._self, {id: "sample user"})
                             .then(function(response){
                                 var user = createdResources.createdUser = response.resource;
-                                deferred.resolve(createdResources);
+                                return resolve(createdResources);
                             });
                     } else {
-                        deferred.resolve(createdResources);
+                        return resolve(createdResources);
                     }
                 })
-                .fail(function(error) {
-                    deferred.reject(error);
+                .catch(function(error) {
+                    return reject(error);
                 });
         }
-        
-        return deferred.promise;
+        })
+
+
     }
 });

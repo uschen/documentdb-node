@@ -1,11 +1,11 @@
-var DocumentDBClient = require("documentdb").DocumentClient
-  , DocumentBase = require("documentdb").DocumentBase
+var DocumentDBClient = require("../documentclientwrapper").DocumentClient
+  , DocumentBase = require("../documentclientwrapper").DocumentBase
   , assert = require("assert")
   , testConfig = require('./_testConfig')
   , Stream = require("stream");
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-  
+
 var host = testConfig.host;
 var masterKey = testConfig.masterKey;
 
@@ -15,21 +15,21 @@ describe("NodeJS CRUD Tests", function(){
     beforeEach(function(done){
         var client = new DocumentDBClient(host, {masterKey: masterKey});
         client.readDatabases().toArray(function(err, databases) {
-             if (err !== undefined) { 
+             if (err !== undefined) {
                 console.log("An error occured", err);
                 return done();
             }
-            
+
             var length = databases.length;
-            
+
             if(length === 0){
                 return done();
             }
-            
+
             var count = 0;
             databases.forEach(function(database){
                 client.deleteDatabase(database._self, function(err, db){
-                    if (err !== undefined) { 
+                    if (err !== undefined) {
                         console.log("An error occured", err);
                         return done();
                     }
@@ -64,7 +64,7 @@ describe("NodeJS CRUD Tests", function(){
 							assert(databases.length > 0, "number of databases for the query should be > 0");
 							client.queryDatabases('SELECT * FROM root r WHERE r.id="' + databaseDefinition.id + '"').toArray(function(err, results) {
 								assert(results.length > 0, "number of results for the query should be > 0");
-								//replace database 
+								//replace database
 								db.id = "replaced db";
 								client.replaceDatabase(db._self, db, function(error, replacedDb){
 									assert.equal(replacedDb.id, "replaced db", "Db name should change");
@@ -113,7 +113,7 @@ describe("NodeJS CRUD Tests", function(){
                             client.queryCollections(db._self, "^/?", {jpath: true}).toArray(function(err, collections) {
                                 assert(collections.length > 0, "number of collections for the query should be > 0");
 								client.queryCollections(db._self, 'SELECT * FROM root r WHERE r.id="' + collectionDefinition.id + '"').toArray(function(err, results) {
-									assert(results.length > 0, "number of results for the query should be > 0");								
+									assert(results.length > 0, "number of results for the query should be > 0");
                                     // read collection
                                     client.readCollection(collection._self, function(err, collection) {
                                         assert.equal(err, undefined, "readCollection should work successfully");
@@ -165,7 +165,7 @@ describe("NodeJS CRUD Tests", function(){
 										assert(documents.length > 0, "number of documents for the query should be > 0");
 										client.queryDocuments(collection._self, 'SELECT * FROM root r WHERE r.id="' + document.id + '"').toArray(function(err, results) {
 											assert(results.length > 0, "number of results for the query should be > 0");
-											//replace document 
+											//replace document
 											document.name = "replaced document";
 											document.foo = "not bar";
 											client.replaceDocument(document._self, document, function(error, replacedDocument) {
@@ -197,7 +197,7 @@ describe("NodeJS CRUD Tests", function(){
             });
         });
     });
-    
+
     describe("Validate Attachment CRUD", function(){
         var createReadableStream = function(firstChunk, secondChunk){
             var readableStream = new Stream.Readable();
@@ -212,13 +212,13 @@ describe("NodeJS CRUD Tests", function(){
                 }
                 chunkCount++;
             };
-            
+
             return readableStream;
         };
-        
+
         var readMediaResponse = function(response, callback){
             var data = "";
-            response.on("data", function(chunk) { 
+            response.on("data", function(chunk) {
                 data += chunk;
             });
             response.on("end", function() {
@@ -229,7 +229,7 @@ describe("NodeJS CRUD Tests", function(){
                 return callback(undefined, data);
             });
         };
-        
+
         it("[nativeApi] Should do attachment CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             // create database
@@ -263,7 +263,7 @@ describe("NodeJS CRUD Tests", function(){
                                         assert(err !== undefined, "create conflicting attachment should return error on conflicting names");
                                         var conflictErrorCode = 409;
                                         assert.equal(err.code, conflictErrorCode);
-                                        contentStream = createReadableStream();                                        
+                                        contentStream = createReadableStream();
                                         // create attachment with media link
                                         var dynamicAttachment = { id: "dynamic attachment", media: "http://xstore.", MediaType: "Book", Author:"My Book Author", Title:"My Book Title", contentType:"application/text" };
                                         client.createAttachment(document._self, dynamicAttachment, function(err, attachment){
@@ -276,7 +276,7 @@ describe("NodeJS CRUD Tests", function(){
                                                 assert.equal(attachments.length, initialCount + 2, "number of attachments should've increased by 2");
                                                 attachment.Author = "new author";
                                                 //replace the attachment
-                                                client.replaceAttachment(attachment._self, attachment, function(err, attachment){      
+                                                client.replaceAttachment(attachment._self, attachment, function(err, attachment){
                                                     assert.equal(err, undefined, "error replacing attachment");
                                                     assert.equal(attachment.MediaType, "Book", "invalid media type");
                                                     assert.equal(attachment.Author, "new author", "invalid property value");
@@ -332,12 +332,12 @@ describe("NodeJS CRUD Tests", function(){
                                 });
                             });
                         });
-                    });  
+                    });
                 });
             });
         });
     });
-   
+
     describe("Validate User CRUD", function(){
         it("[nativeApi] Should do User CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
@@ -360,7 +360,7 @@ describe("NodeJS CRUD Tests", function(){
                                 assert(users.length > 0, "number of users for the query should be > 0");
 								client.queryUsers(db._self, 'SELECT * FROM root r WHERE r.id="' + "new user" + '"').toArray(function(err, results) {
 									assert(results.length > 0, "number of results for the query should be > 0");
-									//replace user 
+									//replace user
 									user.id = "replaced user";
 									client.replaceUser(user._self, user, function(error, replacedUser){
 										assert.equal(replacedUser.id, "replaced user", "user name should change");
@@ -389,7 +389,7 @@ describe("NodeJS CRUD Tests", function(){
             });
         });
     });
-    
+
     describe("Validate Permission CRUD", function(){
         it("[nativeApi] Should do Permission CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
@@ -416,7 +416,7 @@ describe("NodeJS CRUD Tests", function(){
 										assert(permissions.length > 0, "number of permissions for the query should be > 0");
 										client.queryPermissions(user._self, 'SELECT * FROM root r WHERE r.id="' + permission.id + '"').toArray(function(err, results) {
 											assert(results.length > 0, "number of results for the query should be > 0");
-											//replace permission 
+											//replace permission
 											permission.id = "replaced permission";
 											client.replacePermission(permission._self, permission, function(error, replacedPermission){
 												assert.equal(replacedPermission.id, "replaced permission", "permission name should change");
@@ -447,7 +447,7 @@ describe("NodeJS CRUD Tests", function(){
             });
         });
     });
-    
+
     describe("Validate Authorization", function(){
         var setupEntities = function(client, callback){
             // create database
@@ -466,7 +466,7 @@ describe("NodeJS CRUD Tests", function(){
                                     // create user1
                                     client.createUser(db._self, { id: "user1" }, function(err, user1){
                                         var permission = { id: "permission On Coll1", permissionMode: DocumentBase.PermissionMode.Read, resource: collection1._self};
-                                        // create permission for collection1 
+                                        // create permission for collection1
                                         client.createPermission(user1._self, permission, function(err, permissionOnColl1) {
 											assert(permissionOnColl1._token !== undefined, "permission token is invalid");
                                             permission = { id: "permission On Doc1", permissionMode: DocumentBase.PermissionMode.All, resource: document2._self};
@@ -491,7 +491,7 @@ describe("NodeJS CRUD Tests", function(){
                                                             permissionOnDoc2: permissionOnDoc2,
                                                             permissionOnColl2: permissionOnColl2
                                                         };
-                                                        
+
                                                         callback(entities);
                                                     });
                                                 });
@@ -505,7 +505,7 @@ describe("NodeJS CRUD Tests", function(){
                 });
             });
         };
-        
+
         it("[nativeApi] Should do authorization successfully", function(done){
             var client = new DocumentDBClient(host);
             client.readDatabases().toArray(function(err, databases){
@@ -548,7 +548,7 @@ describe("NodeJS CRUD Tests", function(){
             });
         });
     });
-    
+
     describe("Validate Trigger CRUD", function(){
         it("[nativeApi] Should do trigger CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
@@ -580,7 +580,7 @@ describe("NodeJS CRUD Tests", function(){
                                     assert(triggers.length > 0, "number of triggers for the query should be > 0");
 									client.queryTriggers(collection._self, 'SELECT * FROM root r WHERE r.id="' + triggerDefinition.id + '"').toArray(function(err, results) {
 										assert(results.length > 0, "number of results for the query should be > 0");
-										//replace trigger 
+										//replace trigger
 										trigger.body = function() {var x = 20;};
 										client.replaceTrigger(trigger._self, trigger, function(error, replacedTrigger){
 											for (var property in triggerDefinition) {
@@ -603,9 +603,9 @@ describe("NodeJS CRUD Tests", function(){
 														done();
 													});
 												});
-											});    
+											});
 										});
-									});	
+									});
                                 });
                             });
                         });
@@ -638,7 +638,7 @@ describe("NodeJS CRUD Tests", function(){
                                      assert.equal(udf.body, "function () {var x = 10;}");
                                 }
                             }
-                            
+
                             // read udfs after creation
                             client.readUserDefinedFunctions(collection._self).toArray(function(err, udfs) {
                                 assert.equal(udfs.length, beforeCreateUdfsCount + 1, "create should increase the number of udfs");
@@ -647,7 +647,7 @@ describe("NodeJS CRUD Tests", function(){
                                     assert(udfs.length > 0, "number of udfs for the query should be > 0");
 									client.queryUserDefinedFunctions(collection._self, 'SELECT * FROM root r WHERE r.id="' + udfDefinition.id + '"').toArray(function(err, results) {
 										assert(results.length > 0, "number of results for the query should be > 0");
-										// replace udf 
+										// replace udf
 										udf.body = function() {var x = 20;};
 										client.replaceUserDefinedFunction(udf._self, udf, function(error, replacedUdf){
 											for (var property in udfDefinition) {
@@ -672,7 +672,7 @@ describe("NodeJS CRUD Tests", function(){
 												});
 											});
 										});
-									});	
+									});
                                 });
                             });
                         });
@@ -681,7 +681,7 @@ describe("NodeJS CRUD Tests", function(){
             });
         });
     });
-       
+
     describe("Validate sproc CRUD", function(){
         it("[nativeApi] Should do sproc CRUD operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
@@ -705,14 +705,14 @@ describe("NodeJS CRUD Tests", function(){
                                      assert.equal(sproc.body, "function () {var x = 10;}");
                                 }
                             }
-                            
+
                             // read sprocs after creation
                             client.readStoredProcedures(collection._self).toArray(function(err, sprocs) {
                                 assert.equal(sprocs.length, beforeCreateSprocsCount + 1, "create should increase the number of sprocs");
                                 // query sprocs
                                 client.queryStoredProcedures(collection._self, '(^/"id"/"' + sprocDefinition.id + '")/"_rid"!?', {jpath: true}).toArray(function(err, sprocs){
                                     assert(sprocs.length > 0, "number of sprocs for the query should be > 0");
-									// replace sproc 
+									// replace sproc
 									sproc.body = function() {var x = 20;};
 									client.replaceStoredProcedure(sproc._self, sproc, function(error, replacedSproc){
 										for (var property in sprocDefinition) {
@@ -745,7 +745,7 @@ describe("NodeJS CRUD Tests", function(){
             });
         });
     });
-    
+
     describe("Validate collection indexing policy", function(){
         it("[nativeApi] Should create collection with correct indexing policy", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
@@ -764,22 +764,22 @@ describe("NodeJS CRUD Tests", function(){
                                     assert.equal(collection.indexingPolicy.indexingMode, DocumentBase.IndexingMode.Consistent, "indexing mode should be consistent");
                                     var collectionDefinition = {
                                         "id": "CollectionWithIndexingPolicy",
-                                        "indexingPolicy": {  
+                                        "indexingPolicy": {
 											 automatic: true,
 											 indexingMode: "Consistent",
-											"IncludedPaths": [  
-											{  
+											"IncludedPaths": [
+											{
 												IndexType: "Hash",
 												Path: "/"
 											}
 											],
-											ExcludedPaths: [  
+											ExcludedPaths: [
 											 "/\"systemMetadata\"/*"
 											]
 									    }
 
                                     };
-                                    
+
                                     client.deleteCollection(consistentCollection._self, function(err, coll) {
                                         client.createCollection(db._self, collectionDefinition, function(err, collectioWithIndexingPolicy) {
 											assert.equal(collectioWithIndexingPolicy.indexingPolicy.IncludedPaths.length, 2, "Unexpected includedPaths length");
@@ -795,12 +795,12 @@ describe("NodeJS CRUD Tests", function(){
             });
         });
     });
-    
+
     describe("Validate client request timeout", function(){
         it("[nativeApi] Client Should throw exception", function(done){
             var connectionPolicy = new DocumentBase.ConnectionPolicy();
             // making timeout 1 ms to make sure it will throw
-            connectionPolicy.RequestTimeout = 1; 
+            connectionPolicy.RequestTimeout = 1;
             var client = new DocumentDBClient(host, {masterKey: masterKey}, connectionPolicy);
             // create database
             client.createDatabase({ id: "sample database" }, function(err, db){
@@ -809,7 +809,7 @@ describe("NodeJS CRUD Tests", function(){
             });
         });
     });
-    
+
     describe("Validate QueryIterator Functionality", function() {
         var createResources = function(client, callback) {
             client.createDatabase({ id: "sample database" + Math.random() }, function(err, db) {
@@ -823,7 +823,7 @@ describe("NodeJS CRUD Tests", function(){
                                     doc2: doc2,
                                     doc3: doc3
                                 };
-                                
+
                                 callback(resources);
                             });
                         });
@@ -831,7 +831,7 @@ describe("NodeJS CRUD Tests", function(){
                 });
             });
         };
-        
+
         it("[nativeApi] validate QueryIterator iterator toArray", function(done) {
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createResources(client, function(resources){
@@ -845,7 +845,7 @@ describe("NodeJS CRUD Tests", function(){
                 });
             });
         });
-        
+
         it("[nativeApi] validate queryIterator iterator forEach", function(done) {
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createResources(client, function(resources){
@@ -861,7 +861,7 @@ describe("NodeJS CRUD Tests", function(){
                     } else if(counter === 3) {
                         assert.equal(doc.id, resources.doc3.id, "third document should be doc3");
                     }
-                    
+
                     if (doc === undefined) {
                         assert(counter < 5, "iterator should have stopped");
                         done();
@@ -869,7 +869,7 @@ describe("NodeJS CRUD Tests", function(){
                 });
             });
         });
-        
+
         it("[nativeApi] validate queryIterator nextItem and hasMoreResults", function(done) {
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createResources(client, function(resources){
@@ -892,7 +892,7 @@ describe("NodeJS CRUD Tests", function(){
                 });
             });
         });
-        
+
         it("[nativeApi] validate queryIterator iterator executeNext", function(done) {
             var client = new DocumentDBClient(host, {masterKey: masterKey});
             createResources(client, function(resources){
@@ -911,7 +911,7 @@ describe("NodeJS CRUD Tests", function(){
             });
         });
     });
-    
+
     describe("validate trigger functionality", function(){
         var triggers = [
             {
@@ -932,7 +932,7 @@ describe("NodeJS CRUD Tests", function(){
             },
             {
                 id: "t3",
-                body: function() { 
+                body: function() {
                     var item = getContext().getRequest().getBody();
                     item.id = item.id.toLowerCase() + 't3';
                     getContext().getRequest().setBody(item);
@@ -953,29 +953,29 @@ describe("NodeJS CRUD Tests", function(){
             },
             {
                 id: "triggerOpType",
-                body: "function() { }", 
+                body: "function() { }",
                 triggerType: DocumentBase.TriggerType.Post,
                 triggerOperation: DocumentBase.TriggerOperation.Delete,
             },
         ];
-        
+
         var createTriggers = function(client, collection, index, callback){
             if (index === triggers.length) {
                 return callback();
             }
-            
+
             client.createTrigger(collection._self, triggers[index], function(err, trigger){
                 for (var property in triggers[index]) {
                     assert.equal(trigger[property], triggers[index][property], "property " + property + " should match");
                 }
-                
+
                 createTriggers(client, collection, index + 1, callback);
             })
         };
-        
+
         it("[nativeApi] Should do trigger operations successfully", function(done){
             var client = new DocumentDBClient(host, {masterKey: masterKey});
-            // create database    
+            // create database
             client.createDatabase({ id: "sample database" }, function(err, db){
                 // create collection
                 client.createCollection(db._self, { id: "sample collection" }, function(err, collection){
@@ -1012,7 +1012,7 @@ describe("NodeJS CRUD Tests", function(){
     describe("validate stored procedure functionality", function () {
         it("[nativeApi] Should do stored procedure operations successfully", function (done) {
             var client = new DocumentDBClient(host, { masterKey: masterKey });
-            // create database    
+            // create database
             client.createDatabase({ id: "sample database" }, function (err, db) {
                 // create collection
                 client.createCollection(db._self, { id: "sample collection" }, function (err, collection) {
@@ -1046,7 +1046,7 @@ describe("NodeJS CRUD Tests", function(){
 											getContext().getResponse().setBody('a' + input.temp);
 										}
 									};
-										
+
 									client.createStoredProcedure(collection._self, sproc3, function(err, retrievedSproc3){
 										client.executeStoredProcedure(retrievedSproc3._self, {temp: "so"}, function(err, result){
 											assert.equal(result, "aso");
@@ -1058,10 +1058,10 @@ describe("NodeJS CRUD Tests", function(){
 						});
 					});
                 });
-            });                
+            });
         });
     });
-    
+
     describe("validate database account functionality", function () {
 		it("[nativeApi] Should get database account successfully", function (done) {
 			var client = new DocumentDBClient(host, { masterKey: masterKey });

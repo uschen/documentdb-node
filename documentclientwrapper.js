@@ -2,101 +2,115 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //----------------------------------------------------------------------------
 
-var Base = require("./base")
-  , DocumentClient = require('./documentclient').DocumentClient
-  , DocumentBase = require('./documents')
-  , Q = require("q");
+var Base = require("./base"),
+    DocumentClient = require('./documentclient').DocumentClient,
+    DocumentBase = require('./documents'),
+    Promise = require('bluebird');
 
-function createOperationPromise(contextObject, functionName, parentLink, body, options){
-    var deferred = Q.defer();
-    var cb = function (error, resource, responseHeaders) {
-        if (error) {
-            deferred.reject(error);
+function createOperationPromise(contextObject, functionName, parentLink, body, options) {
+    return new Promise(function(resolve, reject) {
+        var cb = function(error, resource, responseHeaders) {
+            if (error) {
+                return reject(error);
+            } else {
+                return resolve({
+                    resource: resource,
+                    headers: responseHeaders
+                });
+            }
+        };
+
+        if (parentLink) {
+            contextObject[functionName](parentLink, body, options, cb);
         } else {
-            deferred.resolve({resource: resource, headers: responseHeaders});
+            contextObject[functionName](body, options, cb);
         }
-    };
-    
-    if (parentLink) {
-        contextObject[functionName](parentLink, body, options, cb);
-    } else {
-        contextObject[functionName](body, options, cb);
-    }
-    
-    return deferred.promise;
+
+    });
 }
 
-function deleteOperationPromise(contextObject, functionName, resourceLink, options){
-    var deferred = Q.defer();
-    contextObject[functionName](resourceLink, options, function (error, resource, responseHeaders) {
-        if (error) {
-            deferred.reject(error);
-        } else {
-            deferred.resolve({resource: resource, headers: responseHeaders});
-        }
+function deleteOperationPromise(contextObject, functionName, resourceLink, options) {
+    return new Promise(function(resolve, reject) {
+        contextObject[functionName](resourceLink, options, function(error, resource, responseHeaders) {
+            if (error) {
+                return reject(error);
+            } else {
+                return resolve({
+                    resource: resource,
+                    headers: responseHeaders
+                });
+            }
+        });
+
     });
-    
-    return deferred.promise;
 }
 
-function replaceOperationPromise(contextObject, functionName, resourceLink, newResource, options){
-    var deferred = Q.defer();
-    contextObject[functionName](resourceLink, newResource, options, function (error, resource, responseHeaders) {
-        if (error) {
-            deferred.reject(error);
-        } else {
-            deferred.resolve({resource: resource, headers: responseHeaders});
-        }
+function replaceOperationPromise(contextObject, functionName, resourceLink, newResource, options) {
+    return new Promise(function(resolve, reject) {
+        contextObject[functionName](resourceLink, newResource, options, function(error, resource, responseHeaders) {
+            if (error) {
+                return reject(error);
+            } else {
+                return resolve({
+                    resource: resource,
+                    headers: responseHeaders
+                });
+            }
+        });
+
     });
-    
-    return deferred.promise;
 }
 
-function readOperationPromise(contextObject, functionName, resourceLink, options){
-    var deferred = Q.defer();
-    contextObject[functionName](resourceLink, options, function (error, resource, responseHeaders) {
-        if (error) {
-            deferred.reject(error);
-        } else {
-            deferred.resolve({resource: resource, headers: responseHeaders});
-        }
+function readOperationPromise(contextObject, functionName, resourceLink, options) {
+    return new Promise(function(resolve, reject) {
+        contextObject[functionName](resourceLink, options, function(error, resource, responseHeaders) {
+            if (error) {
+                return reject(error);
+            } else {
+                return resolve({
+                    resource: resource,
+                    headers: responseHeaders
+                });
+            }
+        });
+
     });
-    
-    return deferred.promise;
 }
 
-function noParameterPromise(contextObject, functionName, resourceLink){
-    var deferred = Q.defer();
-    contextObject[functionName](resourceLink, function (error, resources, responseHeaders) {
-        if (error) {
-            deferred.reject(error);
-        } else {
-            deferred.resolve({result: resources, headers: responseHeaders});
-        }
+function noParameterPromise(contextObject, functionName, resourceLink) {
+    return new Promise(function(resolve, reject) {
+        contextObject[functionName](resourceLink, function(error, resources, responseHeaders) {
+            if (error) {
+                return reject(error);
+            } else {
+                return resolve({
+                    result: resources,
+                    headers: responseHeaders
+                });
+            }
+        });
+
     });
-    
-    return deferred.promise;
 }
 
 
 var DocumentClientWrapper = Base.defineClass(
-     /**
+    /**
      * Provides a wrapper for all the functions of {@link DocumentClient} that uses the Q module promise API instead of the callback model.
      * @constructor DocumentClientWrapper
      * @param {string} urlConnection         - The service endpoint to use to create the client.
      * @param {object} auth                  - An object that is used for authenticating requests and must contains one of the options
      * @param {string} [auth.masterkey]      - The authorization master key to use to create the client.
      * @param {Object} [auth.resourceTokens] - An object that contains resources tokens. Keys for the object are resource Ids and values are the resource tokens.
-     * @param {Array}  [auth.permissionFeed] - An array of {@link Permission} objects.                              
+     * @param {Array}  [auth.permissionFeed] - An array of {@link Permission} objects.
      * @param {object} [connectionPolicy]    - An instance of {@link ConnectionPolicy} class. this parameter is optional and the default connectionPolicy will be used if omitted.
      * @param {string} [consistencyLevel]    - An optional parameter that represent the consistency level. It can take any value from {@link ConsistencyLevel}.
-    */
+     */
     function(urlConnection, auth, connectionPolicy, consistencyLevel) {
         this._innerDocumentclient = new DocumentClient(urlConnection, auth, connectionPolicy, consistencyLevel);
         Base.extend(this, this._innerDocumentclient);
-    },
-    {
-        /** Send a request for creating a database. 
+    }, {
+        /** Send a request for creating a database.
          * <p>
          *  A database manages users, permissions and a set of collections.  <br>
          *  Each Azure DocumentDB Database Account is able to support multiple independent named databases, with the database being the logical container for data. <br>
@@ -110,11 +124,11 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
         */
-        createDatabaseAsync: function (body, options) {
-           return createOperationPromise(this._innerDocumentclient, "createDatabase", undefined, body, options);
+        createDatabaseAsync: function(body, options) {
+            return createOperationPromise(this._innerDocumentclient, "createDatabase", undefined, body, options);
         },
-        
-        /** read a database. 
+
+        /** read a database.
          * @memberof DocumentClientWrapper
          * @instance
          * @param {string} databaseLink      - The self-link of the database.
@@ -122,31 +136,31 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
         */
-        readDatabaseAsync: function (databaseLink, options) {
+        readDatabaseAsync: function(databaseLink, options) {
             return readOperationPromise(this._innerDocumentclient, "readDatabase", databaseLink, options);
         },
-        
-         /** lists all databases. 
+
+        /** lists all databases.
          * @memberof DocumentClientWrapper
          * @instance
          * @param {FeedOptions} [options] - Represents the feed options.
          * @returns {QueryIterator}       - An instance of queryIterator to handle reading feed.
-        */
-        readDatabases: function (options) {
+         */
+        readDatabases: function(options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.readDatabases(options));
         },
-        
-        /** lists all databases that satisfy a query. 
+
+        /** lists all databases that satisfy a query.
          * @memberof DocumentClientWrapper
          * @instance
          * @param {string} query - A SQL query string.
          * @param {FeedOptions} [options] - Represents the feed options.
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
-        */
-        queryDatabases: function (query, options) {
+         */
+        queryDatabases: function(query, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.queryDatabases(query, options));
         },
-        
+
         /** Gets the Database account information.
          * @memberof DocumentClientWrapper
         * @instance
@@ -154,9 +168,11 @@ var DocumentClientWrapper = Base.defineClass(
                              The onFulfilled callback takes a parameter of type {@link DatabaseAccount} and the OnError callback takes a parameter of type {@link ResponseError}</p>
         */
         getDatabaseAccountAsync: function() {
-            return noParameterPromise(this._innerDocumentclient, "getStorageStatistics", function(result) { return result; });
+            return noParameterPromise(this._innerDocumentclient, "getStorageStatistics", function(result) {
+                return result;
+            });
         },
-        
+
         /**
          * Get all collections in this database.
          * @memberof DocumentClientWrapper
@@ -165,7 +181,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - The feed options
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        readCollections: function (databaseLink, options) {
+        readCollections: function(databaseLink, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.readCollections(databaseLink, options));
         },
 
@@ -178,7 +194,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - Represents the feed options.
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        queryCollections: function (databaseLink, query, options) {
+        queryCollections: function(databaseLink, query, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.queryCollections(databaseLink, query, options));
         },
 
@@ -200,11 +216,11 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        createCollectionAsync: function (databaseLink, body, options) {
+        createCollectionAsync: function(databaseLink, body, options) {
             return createOperationPromise(this._innerDocumentclient, "createCollection", databaseLink, body, options);
         },
 
-         /**
+        /**
          * Reads a collection.
          * @memberof DocumentClientWrapper
          * @instance
@@ -213,11 +229,11 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        readCollectionAsync: function (collectionLink, options) {
+        readCollectionAsync: function(collectionLink, options) {
             return readOperationPromise(this._innerDocumentclient, "readCollection", collectionLink, options);
         },
 
-         /**
+        /**
          * Create a user.
          * @memberof DocumentClientWrapper
          * @instance
@@ -228,8 +244,8 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        createUserAsync: function (databaseLink, body, options) {
-           return createOperationPromise(this._innerDocumentclient, "createUser", databaseLink, body, options);
+        createUserAsync: function(databaseLink, body, options) {
+            return createOperationPromise(this._innerDocumentclient, "createUser", databaseLink, body, options);
         },
 
         /**
@@ -240,8 +256,8 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [feedOptions] - The feed options
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        readUsers: function (databaseLink, options) {
-           return new QueryIteratorWrapper(this._innerDocumentclient.readUsers(databaseLink, options));
+        readUsers: function(databaseLink, options) {
+            return new QueryIteratorWrapper(this._innerDocumentclient.readUsers(databaseLink, options));
         },
 
         /**
@@ -253,10 +269,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        readUserAsync: function (userLink, options) {
-           return readOperationPromise(this._innerDocumentclient, "readUser", userLink, options);
+        readUserAsync: function(userLink, options) {
+            return readOperationPromise(this._innerDocumentclient, "readUser", userLink, options);
         },
-        
+
         /**
          * Query the users for the database.
          * @memberof DocumentClientWrapper
@@ -270,7 +286,7 @@ var DocumentClientWrapper = Base.defineClass(
             return new QueryIteratorWrapper(this._innerDocumentclient.queryUsers(databaseLink, query, options));
         },
 
-         /**
+        /**
          * Replace the database object.
          * @memberof DocumentClientWrapper
          * @instance
@@ -280,7 +296,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
         */
-        replaceDatabaseAsync: function (databaseLink, db, options) {
+        replaceDatabaseAsync: function(databaseLink, db, options) {
             return replaceOperationPromise(this._innerDocumentclient, "replaceDatabase", databaseLink, db, options);
         },
 
@@ -293,10 +309,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
         */
-        deleteDatabaseAsync: function (databaseLink, options) {
+        deleteDatabaseAsync: function(databaseLink, options) {
             return deleteOperationPromise(this._innerDocumentclient, "deleteDatabase", databaseLink, options);
         },
-        
+
         /**
          * Create a permission.
          * <p> A permission represents a per-User Permission to access a specific resource e.g. Document or Collection.  </p>
@@ -314,7 +330,7 @@ var DocumentClientWrapper = Base.defineClass(
         createPermissionAsync: function(userLink, body, options) {
             return createOperationPromise(this._innerDocumentclient, "createPermission", userLink, body, options);
         },
-          
+
         /**
          * Reads a permission.
          * @memberof DocumentClientWrapper
@@ -324,11 +340,11 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        readPermissionAsync: function (permissionLink, options) {
+        readPermissionAsync: function(permissionLink, options) {
             return readOperationPromise(this._innerDocumentclient, "readPermission", permissionLink, options);
         },
-            
-         /**
+
+        /**
          * Get all permissions for this user.
          * @memberof DocumentClientWrapper
          * @instance
@@ -406,7 +422,7 @@ var DocumentClientWrapper = Base.defineClass(
         deletePermissionAsync: function(permissionLink, options) {
             return deleteOperationPromise(this._innerDocumentclient, "deletePermission", permissionLink, options);
         },
-        
+
         /**
          * Get all documents in this collection.
          * @memberof DocumentClientWrapper
@@ -415,7 +431,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - The feed options
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        readDocuments:  function (collectionLink, options) {
+        readDocuments: function(collectionLink, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.readDocuments(collectionLink, options));
         },
 
@@ -428,13 +444,13 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - Represents the feed options.
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        queryDocuments: function (collectionLink, query, options) {
+        queryDocuments: function(collectionLink, query, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.queryDocuments(collectionLink, query, options));
         },
 
         /**
          * Create a document.
-         * <p> 
+         * <p>
          * There is no set schema for JSON documents. They may contain any number of custom properties as well as an optional list of attachments. <br>
          * A Document is an application resource and can be authorized using the master key or resource keys
          * </p>
@@ -448,10 +464,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        createDocumentAsync: function (collectionLink, body, options) {
+        createDocumentAsync: function(collectionLink, body, options) {
             return createOperationPromise(this._innerDocumentclient, "createDocument", collectionLink, body, options);
         },
-           
+
         /**
          * Reads a document.
          * @memberof DocumentClientWrapper
@@ -461,7 +477,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        readDocumentAsync: function (documentLink, options) {
+        readDocumentAsync: function(documentLink, options) {
             return readOperationPromise(this._innerDocumentclient, "readDocument", documentLink, options);
         },
 
@@ -473,7 +489,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - The feed options
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        readTriggers:  function (collectionLink, options) {
+        readTriggers: function(collectionLink, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.readTriggers(collectionLink, options));
         },
 
@@ -486,7 +502,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - Represents the feed options.
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        queryTriggers: function (collectionLink, query, options) {
+        queryTriggers: function(collectionLink, query, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.queryTriggers(collectionLink, query, options));
         },
 
@@ -494,7 +510,7 @@ var DocumentClientWrapper = Base.defineClass(
          * Create a trigger.
          * <p>
          * DocumentDB supports pre and post triggers defined in JavaScript to be executed on creates, updates and deletes. <br>
-         * For additional details, refer to the server-side JavaScript API documentation. 
+         * For additional details, refer to the server-side JavaScript API documentation.
          * </p>
          * @memberof DocumentClientWrapper
          * @instance
@@ -508,10 +524,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        createTriggerAsync: function (collectionLink, trigger, options) {
+        createTriggerAsync: function(collectionLink, trigger, options) {
             return createOperationPromise(this._innerDocumentclient, "createTrigger", collectionLink, trigger, options);
         },
- 
+
         /**
          * Reads a trigger object.
          * @memberof DocumentClientWrapper
@@ -521,10 +537,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        readTriggerAsync: function (triggerLink, options) {
+        readTriggerAsync: function(triggerLink, options) {
             return readOperationPromise(this._innerDocumentclient, "readTrigger", triggerLink, options);
         },
-        
+
         /**
          * Get all UserDefinedFunctions in this collection.
          * @memberof DocumentClientWrapper
@@ -533,7 +549,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - The feed options
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        readUserDefinedFunctions:  function (collectionLink, options) {
+        readUserDefinedFunctions: function(collectionLink, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.readUserDefinedFunctions(collectionLink, options));
         },
 
@@ -546,7 +562,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - Represents the feed options.
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        queryUserDefinedFunctions: function (collectionLink, query, options) {
+        queryUserDefinedFunctions: function(collectionLink, query, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.queryUserDefinedFunctions(collectionLink, query, options));
         },
 
@@ -567,7 +583,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        createUserDefinedFunctionAsync: function (collectionLink, udf, options) {
+        createUserDefinedFunctionAsync: function(collectionLink, udf, options) {
             return createOperationPromise(this._innerDocumentclient, "createUserDefinedFunction", collectionLink, udf, options);
         },
 
@@ -580,10 +596,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        readUserDefinedFunctionAsync: function (udfLink, options) {
+        readUserDefinedFunctionAsync: function(udfLink, options) {
             return readOperationPromise(this._innerDocumentclient, "readUserDefinedFunction", udfLink, options);
         },
-        
+
         /**
          * Get all StoredProcedures in this collection.
          * @memberof DocumentClientWrapper
@@ -592,7 +608,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - The feed options
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        readStoredProcedures:  function (collectionLink, options) {
+        readStoredProcedures: function(collectionLink, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.readStoredProcedures(collectionLink, options));
         },
 
@@ -605,16 +621,16 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - Represents the feed options.
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-        queryStoredProcedures: function (collectionLink, query, options) {
+        queryStoredProcedures: function(collectionLink, query, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.queryStoredProcedures(collectionLink, query, options));
         },
- 
+
         /**
          * Create a StoredProcedure object.
          * <p>
          * DocumentDB allows stored procedures to be executed in the storage tier, directly against a document collection. The script <br>
          * gets executed under ACID transactions on the primary storage partition of the specified collection. For additional details, <br>
-         * refer to the server-side JavaScript API documentation. 
+         * refer to the server-side JavaScript API documentation.
          * </p>
          * @memberof DocumentClientWrapper
          * @instance
@@ -626,7 +642,7 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        createStoredProcedureAsync: function (collectionLink, sproc, options) {
+        createStoredProcedureAsync: function(collectionLink, sproc, options) {
             return createOperationPromise(this._innerDocumentclient, "createStoredProcedure", collectionLink, sproc, options);
         },
 
@@ -639,10 +655,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        readStoredProcedureAsync: function (sprocLink, options) {
+        readStoredProcedureAsync: function(sprocLink, options) {
             return readOperationPromise(this._innerDocumentclient, "readStoredProcedure", sprocLink, options);
         },
-		
+
         /**
          * Get all conflicts in this collection.
          * @memberof DocumentClientWrapper
@@ -651,10 +667,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {FeedOptions} [options] - The feed options
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
          */
-		readConflicts:  function (collectionLink, options) {
+        readConflicts: function(collectionLink, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.readConflicts(collectionLink, options));
         },
-		
+
         /**
          * Reads a conflict.
          * @memberof DocumentClientWrapper
@@ -664,10 +680,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-		readConflictAsync: function (conflictLink, options) {
+        readConflictAsync: function(conflictLink, options) {
             return readOperationPromise(this._innerDocumentclient, "readConflict", conflictLink, options);
         },
-         
+
         /**
          * Replace the collection object.
          * @memberof DocumentClientWrapper
@@ -694,7 +710,7 @@ var DocumentClientWrapper = Base.defineClass(
         deleteCollectionAsync: function(collectionLink, options) {
             return deleteOperationPromise(this._innerDocumentclient, "deleteCollection", collectionLink, options);
         },
-        
+
         /**
          * Replace the document object.
          * @memberof DocumentClientWrapper
@@ -708,7 +724,7 @@ var DocumentClientWrapper = Base.defineClass(
         replaceDocumentAsync: function(documentLink, document, options) {
             return replaceOperationPromise(this._innerDocumentclient, "replaceDocument", documentLink, document, options);
         },
-        
+
         /**
          * Delete the document object.
          * @memberof DocumentClientWrapper
@@ -726,7 +742,7 @@ var DocumentClientWrapper = Base.defineClass(
          * Create an attachment for the document object.
          * <p>
          * Each document may contain zero or more attachemnts. Attachments can be of any MIME type - text, image, binary data. <br>
-         * These are stored externally in Azure Blob storage. Attachments are automatically deleted when the parent document is deleted. 
+         * These are stored externally in Azure Blob storage. Attachments are automatically deleted when the parent document is deleted.
          * </P>
          * @memberof DocumentClientWrapper
          * @instance
@@ -738,10 +754,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
         */
-        createAttachmentAsync: function (documentLink, body, options) {
+        createAttachmentAsync: function(documentLink, body, options) {
             return createOperationPromise(this._innerDocumentclient, "createAttachment", documentLink, body, options);
         },
-        
+
         /**
          * Create an attachment for the document object.
          * @memberof DocumentClientWrapper
@@ -765,10 +781,10 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
         */
-        readAttachmentAsync: function (attachmentLink, options) {
+        readAttachmentAsync: function(attachmentLink, options) {
             return readOperationPromise(this._innerDocumentclient, "readAttachment", attachmentLink, options);
         },
-        
+
         /**
          * Get all attachments for this document.
          * @memberof DocumentClientWrapper
@@ -776,8 +792,8 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {string} documentLink     - The self-link of the document.
          * @param {FeedOptions} [options]   - The feed options
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
-        */
-        readAttachments: function (documentLink, options) {
+         */
+        readAttachments: function(documentLink, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.readAttachments(documentLink, options));
         },
 
@@ -789,11 +805,11 @@ var DocumentClientWrapper = Base.defineClass(
          * @param {string} query            - A SQL query string.
          * @param {FeedOptions} [options]   - Represents the feed options.
          * @returns {QueryIterator} - An instance of queryIterator to handle reading feed.
-        */
-        queryAttachments: function (documentLink, query, options) {
+         */
+        queryAttachments: function(documentLink, query, options) {
             return new QueryIteratorWrapper(this._innerDocumentclient.queryAttachments(documentLink, query, options));
         },
-        
+
         /**
          * Read the media for the attachment object.
          * @memberof DocumentClientWrapper
@@ -803,7 +819,7 @@ var DocumentClientWrapper = Base.defineClass(
                              The onFulfilled callback takes a parameter of type {@link Response} and the OnError callback takes a parameter of type {@link ResponseError}</p>
                              <p>The result parameter can be a buffer or a stream depending on the value of {@link MediaReadMode}.</p>
          */
-        readMediaAsync: function (mediaLink) {
+        readMediaAsync: function(mediaLink) {
             return noParameterPromise(this._innerDocumentclient, "readMedia", mediaLink);
         },
 
@@ -817,11 +833,11 @@ var DocumentClientWrapper = Base.defineClass(
          * @Returns {Object} <p>A promise object for the request completion. <br>
                              The onFulfilled callback takes a parameter of type {@link ResourceResponse} and the OnError callback takes a parameter of type {@link ResponseError}</p>
          */
-        updateMediaAsync: function (mediaLink, readableStream, options) {
+        updateMediaAsync: function(mediaLink, readableStream, options) {
             return replaceOperationPromise(this._innerDocumentclient, "updateMedia", mediaLink, readableStream, options);
         },
-        
-         /**
+
+        /**
          * Replace the attachment object.
          * @memberof DocumentClientWrapper
          * @instance
@@ -835,7 +851,7 @@ var DocumentClientWrapper = Base.defineClass(
             return replaceOperationPromise(this._innerDocumentclient, "replaceAttachment", attachmentLink, attachment, options);
         },
 
-         /**
+        /**
          * Delete the attachment object.
          * @memberof DocumentClientWrapper
          * @instance
@@ -847,7 +863,7 @@ var DocumentClientWrapper = Base.defineClass(
         deleteAttachmentAsync: function(attachmentLink, options) {
             return deleteOperationPromise(this._innerDocumentclient, "deleteAttachment", attachmentLink, options);
         },
-        
+
         /**
          * Replace the trigger object.
          * @memberof DocumentClientWrapper
@@ -874,7 +890,7 @@ var DocumentClientWrapper = Base.defineClass(
         deleteTriggerAsync: function(triggerLink, options) {
             return deleteOperationPromise(this._innerDocumentclient, "deleteTrigger", triggerLink, options);
         },
-        
+
         /**
          * Replace the UserDefinedFunction object.
          * @memberof DocumentClientWrapper
@@ -901,7 +917,7 @@ var DocumentClientWrapper = Base.defineClass(
         deleteUserDefinedFunctionAsync: function(udfLink, options) {
             return deleteOperationPromise(this._innerDocumentclient, "deleteUserDefinedFunction", udfLink, options);
         },
-        
+
         /**
          * Execute the StoredProcedure represented by the object.
          * @memberof DocumentClientWrapper
@@ -912,17 +928,22 @@ var DocumentClientWrapper = Base.defineClass(
                              The onFulfilled callback takes a parameter of type {@link Response} and the OnError callback takes a parameter of type {@link ResponseError}</p>
         */
         executeStoredProcedureAsync: function(sprocLink, params) {
-            var deferred = Q.defer();
-            this._innerDocumentclient.executeStoredProcedure(sprocLink, params, function (error, result, responseHeaders) {
-                if (error) {
-                    deferred.reject(error);
-                } else {
-                    deferred.resolve({result: result, headers: responseHeaders});
-                }
+            var self = this;
+            return new Promise(function(resolve, reject) {
+
+                self._innerDocumentclient.executeStoredProcedure(sprocLink, params, function(error, result, responseHeaders) {
+                    if (error) {
+                        return reject(error);
+                    } else {
+                        return resolve({
+                            result: result,
+                            headers: responseHeaders
+                        });
+                    }
+                });
             });
-            return deferred.promise;
         },
-        
+
         /**
          * Replace the StoredProcedure object.
          * @memberof DocumentClientWrapper
@@ -937,7 +958,7 @@ var DocumentClientWrapper = Base.defineClass(
             return replaceOperationPromise(this._innerDocumentclient, "replaceStoredProcedure", sprocLink, sproc, options);
         },
 
-         /**
+        /**
          * Delete the StoredProcedure object.
          * @memberof DocumentClientWrapper
          * @instance
@@ -949,8 +970,8 @@ var DocumentClientWrapper = Base.defineClass(
         deleteStoredProcedureAsync: function(sprocLink, options) {
             return deleteOperationPromise(this._innerDocumentclient, "deleteStoredProcedure", sprocLink, options);
         },
-        
-         /**
+
+        /**
          * Delete the conflict object.
          * @memberof DocumentClientWrapper
          * @instance
@@ -966,28 +987,27 @@ var DocumentClientWrapper = Base.defineClass(
 );
 
 
-function readFeedOperationPromise(contextObject, functionName, query, options, successFn){
-    var deferred = Q.defer();
-    contextObject[functionName](query, options, function (error, resources, responseHeaders) {
-        if (error) {
-            deferred.reject(error);
-        } else {
-            deferred.resolve(successFn(resources), responseHeaders);
-        }
+function readFeedOperationPromise(contextObject, functionName, query, options, successFn) {
+    return new Promise(function(resolve, reject) {
+        contextObject[functionName](query, options, function(error, resources, responseHeaders) {
+            if (error) {
+                return reject(error);
+            } else {
+                return resolve(successFn(resources), responseHeaders);
+            }
+        });
+
     });
-    
-    return deferred.promise;
 }
 
 var QueryIteratorWrapper = Base.defineClass(
     /**
-    * Provides a wrapper for all the functions of {@link QueryIterator} that uses the Q module promise API instead of the callback model.    
-    * @constructor QueryIteratorWrapper
-    */
+     * Provides a wrapper for all the functions of {@link QueryIterator} that uses the Q module promise API instead of the callback model.
+     * @constructor QueryIteratorWrapper
+     */
     function(queryIterator) {
         this._innerQueryIterator = queryIterator;
-    },
-    {
+    }, {
         /**
          * Execute a provided function once per feed element.
          * @memberof QueryIteratorWrapper
@@ -996,50 +1016,60 @@ var QueryIteratorWrapper = Base.defineClass(
          * Note: the last element the callback will be called on will be undefined.
          * If the callback explicitly returned false, the loop gets stopped.
          */
-        forEach: function(callback){
+        forEach: function(callback) {
             this._innerQueryIterator.forEach(callback);
         },
-        
-         /**
+
+        /**
          * Execute a provided function on the next element in the QueryIterator.
          * @memberof QueryIteratorWrapper
          * @instance
          * @Returns {Object} A promise object for the request completion. the onFulfilled callback is of type {@link FeedResponse} and onError callback is of type {@link ResponseError}
          */
-        toArrayAsync: function(){
-            var deferred = Q.defer();
-            var that = this;
-            this._innerQueryIterator.toArray(function(error, resources, responseHeaders) {
-				if (error) {
-                    deferred.reject(error);
-                } else {
-                    deferred.resolve({feed: resources, headers: responseHeaders});
-                }
+        toArrayAsync: function() {
+            var self = this;
+            return new Promise(function(resolve, reject) {
+
+                var that = this;
+                self._innerQueryIterator.toArray(function(error, resources, responseHeaders) {
+                    if (error) {
+                        return reject(error);
+                    } else {
+                        return resolve({
+                            feed: resources,
+                            headers: responseHeaders
+                        });
+                    }
+                });
+
             });
-            
-            return deferred.promise;
         },
-        
-         /**
+
+        /**
          * Gets the next element in the QueryIterator.
          * @memberof QueryIteratorWrapper
          * @instance
          * @Returns {Object} A promise object for the request completion. The onFulfilled callback is of type {@link ResourceResponse} and onError callback is of type {@link ResponseError}
          */
-        nextItemAsync: function(){
-            var deferred = Q.defer();
-            var that = this;
-            this._innerQueryIterator.nextItem(function(error, item, responseHeaders) {
-                if (error) {
-                    deferred.reject(error);
-                } else {
-                    deferred.resolve({resource: item, headers: responseHeaders});
-                }
+        nextItemAsync: function() {
+            var self = this;
+            return new Promise(function(resolve, reject) {
+
+                var that = this;
+                self._innerQueryIterator.nextItem(function(error, item, responseHeaders) {
+                    if (error) {
+                        return reject(error);
+                    } else {
+                        return resolve({
+                            resource: item,
+                            headers: responseHeaders
+                        });
+                    }
+                });
+
             });
-            
-            return deferred.promise;
         },
-        
+
         /**
          * Retrieve the next batch of the feed and pass them as an array to a function
          * @memberof QueryIteratorWrapper
@@ -1047,45 +1077,50 @@ var QueryIteratorWrapper = Base.defineClass(
          * @Returns {Object} A promise object for the request completion. the onFulfilled callback is of type {@link FeedResponse} and onError callback is of type {@link ResponseError}
          */
         executeNextAsync: function() {
-            var deferred = Q.defer();
-            var that = this;
-            this._innerQueryIterator.executeNext(function(error, resources, responseHeaders) {
-                if (error) {
-                    deferred.reject(error);
-                } else {                    
-                    deferred.resolve({feed: resources, headers: responseHeaders});
-                }
+            var self = this;
+            return new Promise(function(resolve, reject) {
+
+                var that = this;
+                self._innerQueryIterator.executeNext(function(error, resources, responseHeaders) {
+                    if (error) {
+                        return reject(error);
+                    } else {
+                        return resolve({
+                            feed: resources,
+                            headers: responseHeaders
+                        });
+                    }
+                });
+
             });
-            
-            return deferred.promise;
         },
-        
+
         /**
          * Retrieve the current element on the QueryIterator.
          * @memberof QueryIteratorWrapper
          * @instance
          * @returns {Object} The current resource in the QueryIterator, undefined if there isn't.
-         */ 
-        current: function(){
+         */
+        current: function() {
             return this._innerQueryIterator.current();
         },
-        
+
         /**
          * Determine if there are still remaining resources to processs based on the value of the continuation token or the elements remaining on the current batch in the QueryIterator.
          * @memberof QueryIteratorWrapper
          * @instance
          * @returns {Boolean} true if there is other elements to process in the QueryIterator.
-         */ 
-        hasMoreResults: function(){
+         */
+        hasMoreResults: function() {
             return this._innerQueryIterator.hasMoreResults();
         },
-        
+
         /**
          * Reset the QueryIterator to the beginning and clear all the resources inside it
          * @memberof QueryIteratorWrapper
          * @instance
          */
-        reset: function(){
+        reset: function() {
             return this._innerQueryIterator.reset();
         }
     }
@@ -1093,29 +1128,29 @@ var QueryIteratorWrapper = Base.defineClass(
 
 /**
  * The response of a request
- * @typedef {Object} Response                  
+ * @typedef {Object} Response
  * @property {Object} result           -        An object that represents the result of the request.
  * @property {Object} headers          -        An object that contain the response headers.
  *
  */
- 
- /**
+
+/**
  * The response of a request that contains a resource.
- * @typedef {Object} ResourceResponse                  
+ * @typedef {Object} ResourceResponse
  * @property {Object} resource         -        An object that represents the requested resource (Db, collection, document ... etc).
  * @property {Object} headers          -        An object that contain the response headers.
  *
  */
- 
- /**
+
+/**
  * The feed response of a request
- * @typedef {Object} FeedResponse                  
+ * @typedef {Object} FeedResponse
  * @property {Object} feed             -        An Array of objects that represents the resources (Db, collection, document ... etc).
  * @property {Object} headers          -        An object that contain the response headers.
  *
  */
- 
-  /**
+
+/**
  * The error of a request
  * @typedef {Object} ResponseError             Contains error information if an error occurs.
  * @param {int} code                   -       The response code corresponding to the error.
